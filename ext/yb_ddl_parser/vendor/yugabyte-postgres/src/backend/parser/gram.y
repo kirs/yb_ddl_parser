@@ -3681,12 +3681,6 @@ CreateStmt:	CREATE OptTemp TABLE qualified_name '(' OptTableElementList ')'
 						ereport(WARNING,
 								(errmsg("split options on TEMP table will be ignored")));
 					}
-					if ($9 && $14)
-					{
-						n->split_options = NULL;
-						ereport(WARNING,
-								(errmsg("split options on a partitioned table will be ignored")));
-					}
 					if ($15 && $2 == RELPERSISTENCE_TEMP)
 					{
 						ereport(ERROR,
@@ -3734,12 +3728,6 @@ CreateStmt:	CREATE OptTemp TABLE qualified_name '(' OptTableElementList ')'
 					{
 						ereport(WARNING,
 								(errmsg("split options on TEMP table will be ignored")));
-					}
-					if ($12 && $17)
-					{
-						n->split_options = NULL;
-						ereport(WARNING,
-								(errmsg("split options on a partitioned table will be ignored")));
 					}
 					if ($18 && $2 == RELPERSISTENCE_TEMP)
 					{
@@ -3790,12 +3778,6 @@ CreateStmt:	CREATE OptTemp TABLE qualified_name '(' OptTableElementList ')'
 						ereport(WARNING,
 								(errmsg("split options on TEMP table will be ignored")));
 					}
-					if ($8 && $13)
-					{
-						n->split_options = NULL;
-						ereport(WARNING,
-								(errmsg("split options on a partitioned table will be ignored")));
-					}
 					if ($14 && $2 == RELPERSISTENCE_TEMP)
 					{
 						ereport(ERROR,
@@ -3845,12 +3827,6 @@ CreateStmt:	CREATE OptTemp TABLE qualified_name '(' OptTableElementList ')'
 						ereport(WARNING,
 								(errmsg("split options on TEMP table will be ignored")));
 					}
-					if ($11 && $16)
-					{
-						n->split_options = NULL;
-						ereport(WARNING,
-								(errmsg("split options on a partitioned table will be ignored")));
-					}
 					if ($17 && $2 == RELPERSISTENCE_TEMP)
 					{
 						ereport(ERROR,
@@ -3899,12 +3875,6 @@ CreateStmt:	CREATE OptTemp TABLE qualified_name '(' OptTableElementList ')'
 						ereport(WARNING,
 								(errmsg("split options on TEMP table will be ignored")));
 					}
-					if ($10 && $15)
-					{
-						n->split_options = NULL;
-						ereport(WARNING,
-								(errmsg("split options on a partitioned table will be ignored")));
-					}
 					$$ = (Node *) n;
 				}
 		| CREATE OptTemp TABLE IF_P NOT EXISTS qualified_name PARTITION OF
@@ -3932,12 +3902,6 @@ CreateStmt:	CREATE OptTemp TABLE qualified_name '(' OptTableElementList ')'
 					{
 						ereport(WARNING,
 								(errmsg("split options on TEMP table will be ignored")));
-					}
-					if ($13 && $18)
-					{
-						n->split_options = NULL;
-						ereport(WARNING,
-								(errmsg("split options on a partitioned table will be ignored")));
 					}
 					$$ = (Node *) n;
 				}
@@ -7343,7 +7307,6 @@ DropStmt:	DROP object_type_any_name IF_P EXISTS any_name_list opt_drop_behavior
 				}
 			| DROP INDEX CONCURRENTLY any_name_list opt_drop_behavior
 				{
-					parser_ybc_not_support(@1, "DROP INDEX CONCURRENTLY");
 					DropStmt *n = makeNode(DropStmt);
 
 					n->removeType = OBJECT_INDEX;
@@ -7355,7 +7318,6 @@ DropStmt:	DROP object_type_any_name IF_P EXISTS any_name_list opt_drop_behavior
 				}
 			| DROP INDEX CONCURRENTLY IF_P EXISTS any_name_list opt_drop_behavior
 				{
-					parser_ybc_not_support(@1, "DROP INDEX CONCURRENTLY");
 					DropStmt *n = makeNode(DropStmt);
 
 					n->removeType = OBJECT_INDEX;

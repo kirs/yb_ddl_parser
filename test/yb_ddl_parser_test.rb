@@ -17,6 +17,9 @@ class YbDDLParserTest < Minitest::Test
     assert_equal "core", table.relation.schema
     assert_equal "orders", table.relation.name
     assert_equal true, table.if_not_exists
+    assert_equal "T_CreateStmt", table.raw_node_type
+    assert_equal "core.orders", table.target_name
+    assert_equal [table.relation], table.target_relations
 
     index = result.statements.fetch(1)
     assert_equal :create_index, index.kind
@@ -24,6 +27,8 @@ class YbDDLParserTest < Minitest::Test
     assert_equal "core", index.relation.schema
     assert_equal "orders", index.relation.name
     assert_equal "idx_orders_id", index.index_name
+    assert_equal "idx_orders_id", index.target_name
+    assert_equal "core.orders", index.target_relation.qualified_name
   end
 
   def test_create_index_yugabyte_flags
@@ -41,6 +46,7 @@ class YbDDLParserTest < Minitest::Test
     assert_equal true, stmt.if_not_exists
     assert_equal "lsm", stmt.access_method
     assert_equal :implicit, stmt.concurrently
+    assert_equal false, stmt.explicit_concurrently?
     assert_equal ["shop_id", "created_at"], stmt.keys.map(&:name)
     assert_equal [true, false], stmt.keys.map(&:hash?)
     assert_equal [:hash, :desc], stmt.keys.map(&:order)
@@ -53,6 +59,7 @@ class YbDDLParserTest < Minitest::Test
     assert_equal false, stmt.unique
     assert_equal false, stmt.if_not_exists
     assert_equal :disabled, stmt.concurrently
+    assert_equal false, stmt.explicit_concurrently?
   end
 
   def test_drop_index_relation_and_flags
@@ -62,6 +69,8 @@ class YbDDLParserTest < Minitest::Test
     assert_equal :index, stmt.object_type
     assert_equal true, stmt.if_exists
     assert_equal :disabled, stmt.concurrently
+    assert_equal true, stmt.drop_index?
+    assert_equal false, stmt.drop_table?
     assert_equal 1, stmt.objects.length
     assert_equal "core", stmt.objects.first.schema
     assert_equal "idx_orders_id", stmt.objects.first.name
@@ -73,6 +82,7 @@ class YbDDLParserTest < Minitest::Test
     assert_equal :alter_table, stmt.kind
     assert_equal :table, stmt.object_type
     assert_equal true, stmt.if_exists
+    assert_equal false, stmt.alter_index?
     assert_equal "core", stmt.relation.schema
     assert_equal "orders", stmt.relation.name
   end
@@ -99,6 +109,17 @@ class YbDDLParserTest < Minitest::Test
     assert_equal :not_null, stmt.columns.first.constraints.first.type
     assert_equal :default, stmt.columns.last.constraints.first.type
     assert_equal "1.5", stmt.columns.last.constraints.first.raw_expression
+    assert_equal <<~SQL.strip, stmt.definition_sql
+      (
+          "code" character varying(255) NOT NULL,
+          "created_at" timestamp without time zone NOT NULL,
+          "id" bigint NOT NULL,
+          "rate" double precision DEFAULT 1.5,
+          CONSTRAINT "currency_conversion_rate_history_pkey"
+            PRIMARY KEY(("code") HASH, "created_at" ASC, "id" ASC),
+          CONSTRAINT chk_code CHECK (octet_length(code) <= 255)
+      ) SPLIT INTO 8 TABLETS
+    SQL
 
     assert_equal "currency_conversion_rate_history_pkey", stmt.primary_key.name
     assert_equal %w[code created_at id], stmt.primary_key.columns
@@ -111,7 +132,7 @@ class YbDDLParserTest < Minitest::Test
     assert_equal "octet_length(code) <= 255", check.raw_expression
     assert_equal ["octet_length"], check.functions
 
-    assert_equal({ type: :num_tablets, num_tablets: 8 }, stmt.split)
+    assert_equal YbDDLParser::Split.new(type: :num_tablets, num_tablets: 8, points: nil), stmt.split
   end
 
   def test_create_index_keys_include_predicate_and_split
@@ -131,16 +152,41 @@ class YbDDLParserTest < Minitest::Test
     assert_equal [true, false, false, false], stmt.keys.map(&:hash?)
     assert_equal ["id"], stmt.include_columns
     assert_equal "octet_length(country_code) = 2", stmt.where_sql
-    assert_equal({ type: :num_tablets, num_tablets: 4 }, stmt.split)
+    assert_equal YbDDLParser::Split.new(type: :num_tablets, num_tablets: 4, points: nil), stmt.split
   end
 
   def test_split_at_values
     stmt = YbDDLParser.parse!("CREATE TABLE t (id int primary key) SPLIT AT VALUES ((1), (2));").single_statement!
 
     assert_equal :create_table, stmt.kind
-    assert_equal({ type: :split_points, points: [["1"], ["2"]] }, stmt.split)
+    assert_equal YbDDLParser::Split.new(type: :split_points, num_tablets: nil, points: [["1"], ["2"]]), stmt.split
     assert_equal :primary_key, stmt.columns.first.constraints.first.type
     assert_equal ["id"], stmt.columns.first.constraints.first.columns
+  end
+
+  def test_create_table_partition_of
+    stmt = YbDDLParser.parse!(
+      "CREATE TABLE core.orders_1 PARTITION OF core.orders FOR VALUES IN (1) TABLESPACE tsp;"
+    ).single_statement!
+
+    assert_equal :create_table, stmt.kind
+    assert_equal "core.orders_1", stmt.relation.qualified_name
+    assert_equal "core.orders", stmt.partition_of.qualified_name
+    assert_equal "FOR VALUES IN (1)", stmt.partition_bound_sql
+    assert_equal true, stmt.partition_child?
+    assert_equal "tsp", stmt.tablespace
+  end
+
+  def test_partitioned_parent_split
+    stmt = YbDDLParser.parse!(
+      "CREATE TABLE core.orders (id int) PARTITION BY LIST (id) SPLIT INTO 1 TABLETS;"
+    ).single_statement!
+
+    assert_equal YbDDLParser::Partition.new(strategy: "list", keys: ["id"]), stmt.partition
+    assert_equal YbDDLParser::Split.new(type: :num_tablets, num_tablets: 1, points: nil), stmt.split
+    assert_nil stmt.partition_of
+    assert_equal true, stmt.partition_parent?
+    assert_equal false, stmt.partition_child?
   end
 
   def test_alter_table_add_and_drop_column_commands
@@ -167,9 +213,53 @@ class YbDDLParserTest < Minitest::Test
     assert_equal :drop, stmt.kind
     assert_equal :table, stmt.object_type
     assert_equal true, stmt.if_exists
+    assert_equal true, stmt.drop_table?
+    assert_equal false, stmt.drop_index?
     assert_equal 1, stmt.objects.length
     assert_equal "core", stmt.objects.first.schema
     assert_equal "orders", stmt.objects.first.name
+    assert_equal "core.orders", stmt.target_name
+  end
+
+  def test_drop_index_concurrently
+    stmt = YbDDLParser.parse!("DROP INDEX CONCURRENTLY core.idx_orders;").single_statement!
+
+    assert_equal :drop, stmt.kind
+    assert_equal :index, stmt.object_type
+    assert_equal "core.idx_orders", stmt.objects.first.qualified_name
+    assert_equal :explicit, stmt.concurrently
+    assert_equal true, stmt.explicit_concurrently?
+  end
+
+  def test_common_denied_statement_kinds
+    truncate = YbDDLParser.parse!("TRUNCATE TABLE core.orders;").single_statement!
+    assert_equal :truncate, truncate.kind
+    assert_equal "T_TruncateStmt", truncate.raw_node_type
+    assert_equal :table, truncate.object_type
+    assert_equal "core.orders", truncate.objects.first.qualified_name
+    assert_equal "core.orders", truncate.target_name
+
+    comment = YbDDLParser.parse!("COMMENT ON TABLE core.orders IS 'x';").single_statement!
+    assert_equal :comment, comment.kind
+    assert_equal :table, comment.object_type
+    assert_equal "core.orders", comment.relation.qualified_name
+
+    rename = YbDDLParser.parse!("ALTER TABLE core.orders RENAME TO orders_old;").single_statement!
+    assert_equal :rename, rename.kind
+    assert_equal :table, rename.object_type
+    assert_equal "core.orders", rename.relation.qualified_name
+    assert_equal "orders_old", rename.new_name
+
+    view = YbDDLParser.parse!("CREATE VIEW core.v AS SELECT 1;").single_statement!
+    assert_equal :create_view, view.kind
+    assert_equal "core.v", view.relation.qualified_name
+  end
+
+  def test_unknown_statement_exposes_raw_node_type
+    stmt = YbDDLParser.parse!("SELECT 1;").single_statement!
+
+    assert_equal :unknown, stmt.kind
+    assert_equal "T_SelectStmt", stmt.raw_node_type
   end
 
   def test_create_schema_and_tablespace
@@ -186,6 +276,7 @@ class YbDDLParserTest < Minitest::Test
 
     assert_equal :create_tablespace, tablespace.kind
     assert_equal "tsp_core", tablespace.name
+    assert_equal "tsp_core", tablespace.target_name
     assert_equal '{"num_replicas":3}', tablespace.replica_placement_json
   end
 

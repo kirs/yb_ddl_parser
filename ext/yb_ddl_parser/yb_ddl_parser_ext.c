@@ -91,8 +91,259 @@ statement_kind(Node *stmt)
       return "create_schema";
     case T_CreateTableSpaceStmt:
       return "create_tablespace";
+    case T_TruncateStmt:
+      return "truncate";
+    case T_CommentStmt:
+      return "comment";
+    case T_RenameStmt:
+      return "rename";
+    case T_ViewStmt:
+      return "create_view";
     default:
       return "unknown";
+  }
+}
+
+static const char *
+raw_node_type_name(Node *stmt)
+{
+  if (stmt == NULL)
+    return NULL;
+
+  switch (nodeTag(stmt))
+  {
+    case T_SelectStmt:
+      return "T_SelectStmt";
+    case T_ReturnStmt:
+      return "T_ReturnStmt";
+    case T_PLAssignStmt:
+      return "T_PLAssignStmt";
+    case T_AlterTableStmt:
+      return "T_AlterTableStmt";
+    case T_AlterTableCmd:
+      return "T_AlterTableCmd";
+    case T_AlterDomainStmt:
+      return "T_AlterDomainStmt";
+    case T_SetOperationStmt:
+      return "T_SetOperationStmt";
+    case T_GrantStmt:
+      return "T_GrantStmt";
+    case T_GrantRoleStmt:
+      return "T_GrantRoleStmt";
+    case T_AlterDefaultPrivilegesStmt:
+      return "T_AlterDefaultPrivilegesStmt";
+    case T_ClosePortalStmt:
+      return "T_ClosePortalStmt";
+    case T_ClusterStmt:
+      return "T_ClusterStmt";
+    case T_CopyStmt:
+      return "T_CopyStmt";
+    case T_CreateStmt:
+      return "T_CreateStmt";
+    case T_DefineStmt:
+      return "T_DefineStmt";
+    case T_DropStmt:
+      return "T_DropStmt";
+    case T_TruncateStmt:
+      return "T_TruncateStmt";
+    case T_CommentStmt:
+      return "T_CommentStmt";
+    case T_FetchStmt:
+      return "T_FetchStmt";
+    case T_IndexStmt:
+      return "T_IndexStmt";
+    case T_CreateFunctionStmt:
+      return "T_CreateFunctionStmt";
+    case T_AlterFunctionStmt:
+      return "T_AlterFunctionStmt";
+    case T_DoStmt:
+      return "T_DoStmt";
+    case T_RenameStmt:
+      return "T_RenameStmt";
+    case T_RuleStmt:
+      return "T_RuleStmt";
+    case T_NotifyStmt:
+      return "T_NotifyStmt";
+    case T_ListenStmt:
+      return "T_ListenStmt";
+    case T_UnlistenStmt:
+      return "T_UnlistenStmt";
+    case T_TransactionStmt:
+      return "T_TransactionStmt";
+    case T_ViewStmt:
+      return "T_ViewStmt";
+    case T_LoadStmt:
+      return "T_LoadStmt";
+    case T_CreateDomainStmt:
+      return "T_CreateDomainStmt";
+    case T_CreatedbStmt:
+      return "T_CreatedbStmt";
+    case T_DropdbStmt:
+      return "T_DropdbStmt";
+    case T_VacuumStmt:
+      return "T_VacuumStmt";
+    case T_ExplainStmt:
+      return "T_ExplainStmt";
+    case T_CreateTableAsStmt:
+      return "T_CreateTableAsStmt";
+    case T_CreateSeqStmt:
+      return "T_CreateSeqStmt";
+    case T_AlterSeqStmt:
+      return "T_AlterSeqStmt";
+    case T_VariableSetStmt:
+      return "T_VariableSetStmt";
+    case T_VariableShowStmt:
+      return "T_VariableShowStmt";
+    case T_DiscardStmt:
+      return "T_DiscardStmt";
+    case T_CreateTrigStmt:
+      return "T_CreateTrigStmt";
+    case T_CreatePLangStmt:
+      return "T_CreatePLangStmt";
+    case T_CreateRoleStmt:
+      return "T_CreateRoleStmt";
+    case T_AlterRoleStmt:
+      return "T_AlterRoleStmt";
+    case T_DropRoleStmt:
+      return "T_DropRoleStmt";
+    case T_LockStmt:
+      return "T_LockStmt";
+    case T_ConstraintsSetStmt:
+      return "T_ConstraintsSetStmt";
+    case T_ReindexStmt:
+      return "T_ReindexStmt";
+    case T_YbBackfillIndexStmt:
+      return "T_YbBackfillIndexStmt";
+    case T_CheckPointStmt:
+      return "T_CheckPointStmt";
+    case T_CreateSchemaStmt:
+      return "T_CreateSchemaStmt";
+    case T_AlterDatabaseStmt:
+      return "T_AlterDatabaseStmt";
+    case T_AlterDatabaseRefreshCollStmt:
+      return "T_AlterDatabaseRefreshCollStmt";
+    case T_AlterDatabaseSetStmt:
+      return "T_AlterDatabaseSetStmt";
+    case T_AlterRoleSetStmt:
+      return "T_AlterRoleSetStmt";
+    case T_CreateConversionStmt:
+      return "T_CreateConversionStmt";
+    case T_CreateCastStmt:
+      return "T_CreateCastStmt";
+    case T_CreateOpClassStmt:
+      return "T_CreateOpClassStmt";
+    case T_CreateOpFamilyStmt:
+      return "T_CreateOpFamilyStmt";
+    case T_AlterOpFamilyStmt:
+      return "T_AlterOpFamilyStmt";
+    case T_PrepareStmt:
+      return "T_PrepareStmt";
+    case T_ExecuteStmt:
+      return "T_ExecuteStmt";
+    case T_DeallocateStmt:
+      return "T_DeallocateStmt";
+    case T_DeclareCursorStmt:
+      return "T_DeclareCursorStmt";
+    case T_YbCreateTableGroupStmt:
+      return "T_YbCreateTableGroupStmt";
+    case T_CreateTableSpaceStmt:
+      return "T_CreateTableSpaceStmt";
+    case T_DropTableSpaceStmt:
+      return "T_DropTableSpaceStmt";
+    case T_AlterObjectDependsStmt:
+      return "T_AlterObjectDependsStmt";
+    case T_AlterObjectSchemaStmt:
+      return "T_AlterObjectSchemaStmt";
+    case T_AlterOwnerStmt:
+      return "T_AlterOwnerStmt";
+    case T_AlterOperatorStmt:
+      return "T_AlterOperatorStmt";
+    case T_AlterTypeStmt:
+      return "T_AlterTypeStmt";
+    case T_DropOwnedStmt:
+      return "T_DropOwnedStmt";
+    case T_ReassignOwnedStmt:
+      return "T_ReassignOwnedStmt";
+    case T_CompositeTypeStmt:
+      return "T_CompositeTypeStmt";
+    case T_CreateEnumStmt:
+      return "T_CreateEnumStmt";
+    case T_CreateRangeStmt:
+      return "T_CreateRangeStmt";
+    case T_AlterEnumStmt:
+      return "T_AlterEnumStmt";
+    case T_AlterTSDictionaryStmt:
+      return "T_AlterTSDictionaryStmt";
+    case T_AlterTSConfigurationStmt:
+      return "T_AlterTSConfigurationStmt";
+    case T_CreateFdwStmt:
+      return "T_CreateFdwStmt";
+    case T_AlterFdwStmt:
+      return "T_AlterFdwStmt";
+    case T_CreateForeignServerStmt:
+      return "T_CreateForeignServerStmt";
+    case T_AlterForeignServerStmt:
+      return "T_AlterForeignServerStmt";
+    case T_CreateUserMappingStmt:
+      return "T_CreateUserMappingStmt";
+    case T_AlterUserMappingStmt:
+      return "T_AlterUserMappingStmt";
+    case T_DropUserMappingStmt:
+      return "T_DropUserMappingStmt";
+    case T_AlterTableSpaceOptionsStmt:
+      return "T_AlterTableSpaceOptionsStmt";
+    case T_AlterTableMoveAllStmt:
+      return "T_AlterTableMoveAllStmt";
+    case T_SecLabelStmt:
+      return "T_SecLabelStmt";
+    case T_CreateForeignTableStmt:
+      return "T_CreateForeignTableStmt";
+    case T_ImportForeignSchemaStmt:
+      return "T_ImportForeignSchemaStmt";
+    case T_CreateExtensionStmt:
+      return "T_CreateExtensionStmt";
+    case T_AlterExtensionStmt:
+      return "T_AlterExtensionStmt";
+    case T_AlterExtensionContentsStmt:
+      return "T_AlterExtensionContentsStmt";
+    case T_CreateEventTrigStmt:
+      return "T_CreateEventTrigStmt";
+    case T_AlterEventTrigStmt:
+      return "T_AlterEventTrigStmt";
+    case T_RefreshMatViewStmt:
+      return "T_RefreshMatViewStmt";
+    case T_ReplicaIdentityStmt:
+      return "T_ReplicaIdentityStmt";
+    case T_AlterSystemStmt:
+      return "T_AlterSystemStmt";
+    case T_CreatePolicyStmt:
+      return "T_CreatePolicyStmt";
+    case T_AlterPolicyStmt:
+      return "T_AlterPolicyStmt";
+    case T_CreateTransformStmt:
+      return "T_CreateTransformStmt";
+    case T_CreateAmStmt:
+      return "T_CreateAmStmt";
+    case T_CreatePublicationStmt:
+      return "T_CreatePublicationStmt";
+    case T_AlterPublicationStmt:
+      return "T_AlterPublicationStmt";
+    case T_CreateSubscriptionStmt:
+      return "T_CreateSubscriptionStmt";
+    case T_AlterSubscriptionStmt:
+      return "T_AlterSubscriptionStmt";
+    case T_DropSubscriptionStmt:
+      return "T_DropSubscriptionStmt";
+    case T_CreateStatsStmt:
+      return "T_CreateStatsStmt";
+    case T_AlterCollationStmt:
+      return "T_AlterCollationStmt";
+    case T_CallStmt:
+      return "T_CallStmt";
+    case T_AlterStatsStmt:
+      return "T_AlterStatsStmt";
+    default:
+      return "T_Unknown";
   }
 }
 
@@ -223,6 +474,40 @@ build_relation_array_from_name_lists(List *objects)
   }
 
   return array;
+}
+
+static VALUE
+build_relation_array_from_range_vars(List *relations)
+{
+  VALUE array = rb_ary_new_capa(list_length(relations));
+  ListCell *cell;
+
+  foreach(cell, relations)
+  {
+    Node *node = (Node *) lfirst(cell);
+    VALUE relation = Qnil;
+
+    if (node != NULL && IsA(node, RangeVar))
+      relation = build_relation_hash(castNode(RangeVar, node));
+
+    if (!NIL_P(relation))
+      rb_ary_push(array, relation);
+  }
+
+  return array;
+}
+
+static VALUE
+first_relation_hash_from_range_vars(List *relations)
+{
+  if (relations == NIL)
+    return Qnil;
+
+  Node *node = (Node *) linitial(relations);
+  if (node == NULL || !IsA(node, RangeVar))
+    return Qnil;
+
+  return build_relation_hash(castNode(RangeVar, node));
 }
 
 static VALUE expression_string(Node *node);
@@ -974,6 +1259,101 @@ build_partition(PartitionSpec *partition)
   return hash;
 }
 
+static void
+append_expression_list(VALUE out, List *exprs)
+{
+  ListCell *cell;
+  int index = 0;
+
+  foreach(cell, exprs)
+  {
+    VALUE expr = expression_string((Node *) lfirst(cell));
+
+    if (index > 0)
+      rb_str_cat_cstr(out, ", ");
+    rb_str_append(out, NIL_P(expr) ? rb_str_new_cstr("?") : expr);
+    index++;
+  }
+}
+
+static VALUE
+partition_range_datum_string(Node *node)
+{
+  if (node == NULL)
+    return Qnil;
+
+  if (IsA(node, PartitionRangeDatum))
+  {
+    PartitionRangeDatum *datum = castNode(PartitionRangeDatum, node);
+
+    switch (datum->kind)
+    {
+      case PARTITION_RANGE_DATUM_MINVALUE:
+        return rb_str_new_cstr("MINVALUE");
+      case PARTITION_RANGE_DATUM_MAXVALUE:
+        return rb_str_new_cstr("MAXVALUE");
+      case PARTITION_RANGE_DATUM_VALUE:
+        return expression_string(datum->value);
+      default:
+        return Qnil;
+    }
+  }
+
+  return expression_string(node);
+}
+
+static void
+append_partition_range_datums(VALUE out, List *datums)
+{
+  ListCell *cell;
+  int index = 0;
+
+  foreach(cell, datums)
+  {
+    VALUE datum = partition_range_datum_string((Node *) lfirst(cell));
+
+    if (index > 0)
+      rb_str_cat_cstr(out, ", ");
+    rb_str_append(out, NIL_P(datum) ? rb_str_new_cstr("?") : datum);
+    index++;
+  }
+}
+
+static VALUE
+build_partition_bound_sql(PartitionBoundSpec *bound)
+{
+  if (bound == NULL)
+    return Qnil;
+
+  if (bound->is_default)
+    return rb_str_new_cstr("DEFAULT");
+
+  switch (bound->strategy)
+  {
+    case PARTITION_STRATEGY_HASH:
+      return rb_sprintf("FOR VALUES WITH (modulus %d, remainder %d)",
+                        bound->modulus, bound->remainder);
+    case PARTITION_STRATEGY_LIST:
+    {
+      VALUE out = rb_str_new_cstr("FOR VALUES IN (");
+      append_expression_list(out, bound->listdatums);
+      rb_str_cat_cstr(out, ")");
+      return out;
+    }
+    case PARTITION_STRATEGY_RANGE:
+    {
+      VALUE out = rb_str_new_cstr("FOR VALUES FROM (");
+      append_partition_range_datums(out, bound->lowerdatums);
+      rb_str_cat_cstr(out, ") TO (");
+      append_partition_range_datums(out, bound->upperdatums);
+      rb_str_cat_cstr(out, ")");
+      return out;
+    }
+    default:
+      return Qnil;
+  }
+}
+
 static VALUE
 build_alter_command(AlterTableCmd *cmd)
 {
@@ -1052,6 +1432,14 @@ extract_create_stmt(VALUE hash, CreateStmt *stmt)
   rb_hash_aset(hash, symbol_key("primary_key"), find_primary_key(constraints));
   rb_hash_aset(hash, symbol_key("split"), build_split(stmt->split_options));
   rb_hash_aset(hash, symbol_key("partition"), build_partition(stmt->partspec));
+
+  if (stmt->partbound != NULL)
+  {
+    rb_hash_aset(hash, symbol_key("partition_of"),
+                 first_relation_hash_from_range_vars(stmt->inhRelations));
+    rb_hash_aset(hash, symbol_key("partition_bound_sql"),
+                 build_partition_bound_sql(stmt->partbound));
+  }
 }
 
 static void
@@ -1115,6 +1503,57 @@ extract_create_tablespace_stmt(VALUE hash, CreateTableSpaceStmt *stmt)
     rb_hash_aset(hash, symbol_key("replica_placement_json"), replica_placement);
 }
 
+static void
+extract_truncate_stmt(VALUE hash, TruncateStmt *stmt)
+{
+  rb_hash_aset(hash, symbol_key("object_type"), symbol_value("table"));
+  rb_hash_aset(hash, symbol_key("objects"),
+               build_relation_array_from_range_vars(stmt->relations));
+  rb_hash_aset(hash, symbol_key("relation"),
+               first_relation_hash_from_range_vars(stmt->relations));
+}
+
+static void
+extract_comment_stmt(VALUE hash, CommentStmt *stmt)
+{
+  rb_hash_aset(hash, symbol_key("object_type"),
+               symbol_value(object_type_name(stmt->objtype)));
+
+  if (stmt->object != NULL && IsA(stmt->object, List))
+  {
+    List *names = (List *) stmt->object;
+    VALUE relation = build_relation_hash_from_name_list(names);
+    if (!NIL_P(relation))
+    {
+      rb_hash_aset(hash, symbol_key("relation"), relation);
+
+      VALUE objects = rb_ary_new_capa(1);
+      rb_ary_push(objects, relation);
+      rb_hash_aset(hash, symbol_key("objects"), objects);
+    }
+
+    rb_hash_aset(hash, symbol_key("name"), name_list_string(names));
+  }
+}
+
+static void
+extract_rename_stmt(VALUE hash, RenameStmt *stmt)
+{
+  rb_hash_aset(hash, symbol_key("object_type"),
+               symbol_value(object_type_name(stmt->renameType)));
+  rb_hash_aset(hash, symbol_key("relation"), build_relation_hash(stmt->relation));
+  hash_set_cstr(hash, "name", stmt->subname);
+  hash_set_cstr(hash, "new_name", stmt->newname);
+  hash_set_bool(hash, "if_exists", stmt->missing_ok);
+}
+
+static void
+extract_view_stmt(VALUE hash, ViewStmt *stmt)
+{
+  rb_hash_aset(hash, symbol_key("relation"), build_relation_hash(stmt->view));
+  hash_set_bool(hash, "if_not_exists", false);
+}
+
 static VALUE
 build_statement_hash(VALUE sql, RawStmt *raw_stmt)
 {
@@ -1123,6 +1562,7 @@ build_statement_hash(VALUE sql, RawStmt *raw_stmt)
 
   rb_hash_aset(stmt, symbol_key("kind"),
                symbol_value(statement_kind(node)));
+  hash_set_cstr(stmt, "raw_node_type", raw_node_type_name(node));
   rb_hash_aset(stmt, symbol_key("location"), INT2NUM(raw_stmt->stmt_location));
   rb_hash_aset(stmt, symbol_key("sql"), statement_sql(sql, raw_stmt));
 
@@ -1148,6 +1588,18 @@ build_statement_hash(VALUE sql, RawStmt *raw_stmt)
       break;
     case T_CreateTableSpaceStmt:
       extract_create_tablespace_stmt(stmt, castNode(CreateTableSpaceStmt, node));
+      break;
+    case T_TruncateStmt:
+      extract_truncate_stmt(stmt, castNode(TruncateStmt, node));
+      break;
+    case T_CommentStmt:
+      extract_comment_stmt(stmt, castNode(CommentStmt, node));
+      break;
+    case T_RenameStmt:
+      extract_rename_stmt(stmt, castNode(RenameStmt, node));
+      break;
+    case T_ViewStmt:
+      extract_view_stmt(stmt, castNode(ViewStmt, node));
       break;
     default:
       break;

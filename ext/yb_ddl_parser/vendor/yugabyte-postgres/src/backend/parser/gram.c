@@ -33746,12 +33746,6 @@ yyreduce:
 						ereport(WARNING,
 								(errmsg("split options on TEMP table will be ignored")));
 					}
-					if ((yyvsp[(9) - (15)].partspec) && (yyvsp[(14) - (15)].splitopt))
-					{
-						n->split_options = NULL;
-						ereport(WARNING,
-								(errmsg("split options on a partitioned table will be ignored")));
-					}
 					if ((yyvsp[(15) - (15)].grpopt) && (yyvsp[(2) - (15)].ival) == RELPERSISTENCE_TEMP)
 					{
 						ereport(ERROR,
@@ -33799,12 +33793,6 @@ yyreduce:
 					{
 						ereport(WARNING,
 								(errmsg("split options on TEMP table will be ignored")));
-					}
-					if ((yyvsp[(12) - (18)].partspec) && (yyvsp[(17) - (18)].splitopt))
-					{
-						n->split_options = NULL;
-						ereport(WARNING,
-								(errmsg("split options on a partitioned table will be ignored")));
 					}
 					if ((yyvsp[(18) - (18)].grpopt) && (yyvsp[(2) - (18)].ival) == RELPERSISTENCE_TEMP)
 					{
@@ -33855,12 +33843,6 @@ yyreduce:
 						ereport(WARNING,
 								(errmsg("split options on TEMP table will be ignored")));
 					}
-					if ((yyvsp[(8) - (14)].partspec) && (yyvsp[(13) - (14)].splitopt))
-					{
-						n->split_options = NULL;
-						ereport(WARNING,
-								(errmsg("split options on a partitioned table will be ignored")));
-					}
 					if ((yyvsp[(14) - (14)].grpopt) && (yyvsp[(2) - (14)].ival) == RELPERSISTENCE_TEMP)
 					{
 						ereport(ERROR,
@@ -33910,12 +33892,6 @@ yyreduce:
 						ereport(WARNING,
 								(errmsg("split options on TEMP table will be ignored")));
 					}
-					if ((yyvsp[(11) - (17)].partspec) && (yyvsp[(16) - (17)].splitopt))
-					{
-						n->split_options = NULL;
-						ereport(WARNING,
-								(errmsg("split options on a partitioned table will be ignored")));
-					}
 					if ((yyvsp[(17) - (17)].grpopt) && (yyvsp[(2) - (17)].ival) == RELPERSISTENCE_TEMP)
 					{
 						ereport(ERROR,
@@ -33964,12 +33940,6 @@ yyreduce:
 						ereport(WARNING,
 								(errmsg("split options on TEMP table will be ignored")));
 					}
-					if ((yyvsp[(10) - (15)].partspec) && (yyvsp[(15) - (15)].splitopt))
-					{
-						n->split_options = NULL;
-						ereport(WARNING,
-								(errmsg("split options on a partitioned table will be ignored")));
-					}
 					(yyval.node) = (Node *) n;
 				;}
     break;
@@ -33998,12 +33968,6 @@ yyreduce:
 					{
 						ereport(WARNING,
 								(errmsg("split options on TEMP table will be ignored")));
-					}
-					if ((yyvsp[(13) - (18)].partspec) && (yyvsp[(18) - (18)].splitopt))
-					{
-						n->split_options = NULL;
-						ereport(WARNING,
-								(errmsg("split options on a partitioned table will be ignored")));
 					}
 					(yyval.node) = (Node *) n;
 				;}
@@ -38099,7 +38063,6 @@ yyreduce:
   case 927:
 #line 7345 "gram.y"
     {
-					parser_ybc_not_support((yylsp[(1) - (5)]), "DROP INDEX CONCURRENTLY");
 					DropStmt *n = makeNode(DropStmt);
 
 					n->removeType = OBJECT_INDEX;
@@ -38114,7 +38077,6 @@ yyreduce:
   case 928:
 #line 7357 "gram.y"
     {
-					parser_ybc_not_support((yylsp[(1) - (7)]), "DROP INDEX CONCURRENTLY");
 					DropStmt *n = makeNode(DropStmt);
 
 					n->removeType = OBJECT_INDEX;
@@ -52170,4 +52132,3 @@ ybc_deprecated_feature_warning(int pos, core_yyscan_t yyscanner, const char *fea
 			 errmsg("'%s' feature is deprecated and will be removed in a future release", feature),
 			 parser_errposition(pos)));
 }
-

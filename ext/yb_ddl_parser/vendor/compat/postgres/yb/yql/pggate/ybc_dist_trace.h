@@ -1,0 +1,12 @@
+#ifndef YB_YQL_PGGATE_YBC_DIST_TRACE_H
+#define YB_YQL_PGGATE_YBC_DIST_TRACE_H
+
+#include "yb/yql/pggate/ybc_pg_typedefs.h"
+
+#define YB_TRACEPARENT_KEY_PREFIX "traceparent="
+#define YB_TRACEPARENT_KEY_PREFIX_LEN 12
+#define YB_TRACEPARENT_QUOTE_LEN 1
+#define YB_TRACEPARENT_COMMENT_DELIMITERS_LEN 2
+#define YB_TRACEPARENT_VALUE_LEN 55
+
+#endif

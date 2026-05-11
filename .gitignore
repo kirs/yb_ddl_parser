@@ -1,0 +1,7 @@
+*.bundle
+*.o
+*.so
+*.dSYM/
+
+/ext/**/Makefile
+/ext/**/mkmf.log

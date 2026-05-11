@@ -10,6 +10,37 @@
 #include "yb/yql/pggate/ybc_gflags.h"
 
 #include <stdarg.h>
+#include <stdio.h>
+
+/*
+ * PostgreSQL's port.h maps libc printf-family calls to pg_* replacements.
+ * This gem does not compile PostgreSQL's port/snprintf.c, so provide small
+ * wrappers around the platform libc functions for the parser runtime.
+ */
+#ifdef vsnprintf
+#undef vsnprintf
+#endif
+#ifdef snprintf
+#undef snprintf
+#endif
+#ifdef vsprintf
+#undef vsprintf
+#endif
+#ifdef sprintf
+#undef sprintf
+#endif
+#ifdef vfprintf
+#undef vfprintf
+#endif
+#ifdef fprintf
+#undef fprintf
+#endif
+#ifdef vprintf
+#undef vprintf
+#endif
+#ifdef printf
+#undef printf
+#endif
 
 bool IsBinaryUpgrade = false;
 bool IsYsqlUpgrade = false;
@@ -175,6 +206,70 @@ pstrdup(const char *in)
   char *out = palloc(len);
   memcpy(out, in, len);
   return out;
+}
+
+int
+pg_vsnprintf(char *str, size_t count, const char *fmt, va_list args)
+{
+  return vsnprintf(str, count, fmt, args);
+}
+
+int
+pg_snprintf(char *str, size_t count, const char *fmt, ...)
+{
+  va_list args;
+  va_start(args, fmt);
+  int result = vsnprintf(str, count, fmt, args);
+  va_end(args);
+  return result;
+}
+
+int
+pg_vsprintf(char *str, const char *fmt, va_list args)
+{
+  return vsprintf(str, fmt, args);
+}
+
+int
+pg_sprintf(char *str, const char *fmt, ...)
+{
+  va_list args;
+  va_start(args, fmt);
+  int result = vsprintf(str, fmt, args);
+  va_end(args);
+  return result;
+}
+
+int
+pg_vfprintf(FILE *stream, const char *fmt, va_list args)
+{
+  return vfprintf(stream, fmt, args);
+}
+
+int
+pg_fprintf(FILE *stream, const char *fmt, ...)
+{
+  va_list args;
+  va_start(args, fmt);
+  int result = vfprintf(stream, fmt, args);
+  va_end(args);
+  return result;
+}
+
+int
+pg_vprintf(const char *fmt, va_list args)
+{
+  return vprintf(fmt, args);
+}
+
+int
+pg_printf(const char *fmt, ...)
+{
+  va_list args;
+  va_start(args, fmt);
+  int result = vprintf(fmt, args);
+  va_end(args);
+  return result;
 }
 
 char *

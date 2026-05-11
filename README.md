@@ -12,34 +12,40 @@ internal parse node churn.
 require "yb_ddl_parser"
 
 result = YbDDLParser.parse(sql)
-result.statements # => [YbDDLParser::Statement, ...]
-result.errors     # => [{ message:, position: }, ...]
+result.statements # => [YbDDLParser::AST::Statement, ...]
+result.errors     # => [YbDDLParser::AST::ParseDiagnostic, ...]
 
-stmt = YbDDLParser.parse!(sql).single_statement!
+stmt = YbDDLParser.parse_one!(sql)
 stmt.kind
 stmt.relation&.qualified_name
 ```
 
-`parse` always returns a `YbDDLParser::ParseResult`. `parse!` raises
-`YbDDLParser::ParseError` on parser errors.
+`parse` always returns a `YbDDLParser::AST::ParseResult`. `parse!` raises
+`YbDDLParser::ParseError` on parser errors. `parse_one!` also requires exactly
+one statement.
 
 The public value objects are:
 
-- `ParseResult`: `statements`, `errors`, `single_statement!`,
+- `AST::ParseResult`: `statements`, `errors`, `single_statement!`,
   `each_statement`, `each_column`
-- `Statement`: stable DDL facts such as `kind`, `sql`, `relation`, `columns`,
-  `constraints`, `primary_key`, `commands`, `keys`, `split`, `partition`,
-  `partition_of`, `partition_bound_sql`, `definition_sql`, `raw_node_type`,
+- `AST::Statement`: stable DDL facts such as `kind`, `sql`, `relation`,
+  `columns`, `constraints`, `primary_key`, `commands`, `keys`, `tablet_split`,
+  `partition_spec`, `partition_of`, `partition_bound_sql`, `raw_node_type`,
   `if_exists`, `if_not_exists`, and `new_name`
-- `RelationName`: `schema`, `name`, `qualified_name`
-- `Column`: `name`, `type`, `typmods`, `constraints`
-- `Constraint`: `type`, `name`, `columns`, `key_columns`, `raw_expression`,
+- `AST::RelationName`: `schema`, `name`, `qualified_name`
+- `AST::Column`: `name`, `type`, `typmods`, `constraints`
+- `AST::Constraint`: `type`, `name`, `columns`, `key_columns`, `raw_expression`,
   `functions`
-- `KeyColumn`: `name`, `expression`, `order`, `nulls`, `hash?`
-- `Command`: `kind`, `column`, `definition`, `constraint`, `tablespace`,
+- `AST::KeyColumn`: `name`, `expression`, `order`, `nulls`, `hashed`, `hash?`
+- `AST::Command`: `kind`, `column`, `definition`, `constraint`, `tablespace`,
   `missing_ok`
-- `Split`: `type`, `num_tablets`, `points`
-- `Partition`: `strategy`, `keys`
+- `AST::TabletSplit`: `type`, `num_tablets`, `points`
+- `AST::PartitionSpec`: `strategy`, `keys`
+- `AST::ParseDiagnostic`: `message`, `position`
+
+`YbDDLParser::ParseResult` and `YbDDLParser::Statement` are aliases for the
+common AST types. `Statement#split` and `Statement#partition` remain aliases for
+`tablet_split` and `partition_spec`.
 
 Useful `Statement` helpers include `drop_table?`, `drop_index?`,
 `alter_index?`, `partition_parent?`, `partition_child?`,

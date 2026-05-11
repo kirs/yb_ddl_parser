@@ -18,10 +18,14 @@ module YbDDLParser
     ParseResult.from_hash(Native.parse(sql.to_s))
   end
 
+  def self.parse_one!(sql)
+    parse!(sql).single_statement!
+  end
+
   def self.parse!(sql)
     result = parse(sql)
     error = result.errors.first
-    raise ParseError.new(error.fetch(:message), position: error[:position]) if error
+    raise ParseError.new(error.message, position: error.position) if error
 
     result
   end

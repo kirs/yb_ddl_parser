@@ -3,6 +3,13 @@
 require "test_helper"
 
 class YbDDLParserTest < Minitest::Test
+  def test_public_ast_namespace_and_top_level_aliases
+    assert_same YbDDLParser::AST::Statement, YbDDLParser::Statement
+    assert_same YbDDLParser::AST::ParseResult, YbDDLParser::ParseResult
+    refute YbDDLParser.const_defined?(:Split, false)
+    refute YbDDLParser.const_defined?(:Partition, false)
+  end
+
   def test_multi_statement_sql_slices_and_create_table_relation
     result = YbDDLParser.parse!(<<~SQL)
       CREATE TABLE IF NOT EXISTS "core"."orders" (id int);
@@ -32,7 +39,7 @@ class YbDDLParserTest < Minitest::Test
   end
 
   def test_create_index_yugabyte_flags
-    stmt = YbDDLParser.parse!(<<~SQL).single_statement!
+    stmt = YbDDLParser.parse_one!(<<~SQL)
       CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_shop_created
       ON "core"."orders"
       USING lsm ((shop_id) HASH, created_at DESC);
@@ -47,6 +54,7 @@ class YbDDLParserTest < Minitest::Test
     assert_equal "lsm", stmt.access_method
     assert_equal :implicit, stmt.concurrently
     assert_equal false, stmt.explicit_concurrently?
+    assert_equal true, stmt.keys.first.hashed
     assert_equal ["shop_id", "created_at"], stmt.keys.map(&:name)
     assert_equal [true, false], stmt.keys.map(&:hash?)
     assert_equal [:hash, :desc], stmt.keys.map(&:order)
@@ -109,17 +117,6 @@ class YbDDLParserTest < Minitest::Test
     assert_equal :not_null, stmt.columns.first.constraints.first.type
     assert_equal :default, stmt.columns.last.constraints.first.type
     assert_equal "1.5", stmt.columns.last.constraints.first.raw_expression
-    assert_equal <<~SQL.strip, stmt.definition_sql
-      (
-          "code" character varying(255) NOT NULL,
-          "created_at" timestamp without time zone NOT NULL,
-          "id" bigint NOT NULL,
-          "rate" double precision DEFAULT 1.5,
-          CONSTRAINT "currency_conversion_rate_history_pkey"
-            PRIMARY KEY(("code") HASH, "created_at" ASC, "id" ASC),
-          CONSTRAINT chk_code CHECK (octet_length(code) <= 255)
-      ) SPLIT INTO 8 TABLETS
-    SQL
 
     assert_equal "currency_conversion_rate_history_pkey", stmt.primary_key.name
     assert_equal %w[code created_at id], stmt.primary_key.columns
@@ -132,7 +129,8 @@ class YbDDLParserTest < Minitest::Test
     assert_equal "octet_length(code) <= 255", check.raw_expression
     assert_equal ["octet_length"], check.functions
 
-    assert_equal YbDDLParser::Split.new(type: :num_tablets, num_tablets: 8, points: nil), stmt.split
+    assert_equal YbDDLParser::AST::TabletSplit.new(type: :num_tablets, num_tablets: 8, points: nil), stmt.tablet_split
+    assert_equal stmt.tablet_split, stmt.split
   end
 
   def test_create_index_keys_include_predicate_and_split
@@ -152,14 +150,14 @@ class YbDDLParserTest < Minitest::Test
     assert_equal [true, false, false, false], stmt.keys.map(&:hash?)
     assert_equal ["id"], stmt.include_columns
     assert_equal "octet_length(country_code) = 2", stmt.where_sql
-    assert_equal YbDDLParser::Split.new(type: :num_tablets, num_tablets: 4, points: nil), stmt.split
+    assert_equal YbDDLParser::AST::TabletSplit.new(type: :num_tablets, num_tablets: 4, points: nil), stmt.tablet_split
   end
 
   def test_split_at_values
     stmt = YbDDLParser.parse!("CREATE TABLE t (id int primary key) SPLIT AT VALUES ((1), (2));").single_statement!
 
     assert_equal :create_table, stmt.kind
-    assert_equal YbDDLParser::Split.new(type: :split_points, num_tablets: nil, points: [["1"], ["2"]]), stmt.split
+    assert_equal YbDDLParser::AST::TabletSplit.new(type: :split_points, num_tablets: nil, points: [["1"], ["2"]]), stmt.tablet_split
     assert_equal :primary_key, stmt.columns.first.constraints.first.type
     assert_equal ["id"], stmt.columns.first.constraints.first.columns
   end
@@ -182,8 +180,9 @@ class YbDDLParserTest < Minitest::Test
       "CREATE TABLE core.orders (id int) PARTITION BY LIST (id) SPLIT INTO 1 TABLETS;"
     ).single_statement!
 
-    assert_equal YbDDLParser::Partition.new(strategy: "list", keys: ["id"]), stmt.partition
-    assert_equal YbDDLParser::Split.new(type: :num_tablets, num_tablets: 1, points: nil), stmt.split
+    assert_equal YbDDLParser::AST::PartitionSpec.new(strategy: :list, keys: ["id"]), stmt.partition_spec
+    assert_equal stmt.partition_spec, stmt.partition
+    assert_equal YbDDLParser::AST::TabletSplit.new(type: :num_tablets, num_tablets: 1, points: nil), stmt.tablet_split
     assert_nil stmt.partition_of
     assert_equal true, stmt.partition_parent?
     assert_equal false, stmt.partition_child?
@@ -284,7 +283,8 @@ class YbDDLParserTest < Minitest::Test
     result = YbDDLParser.parse("create table")
 
     assert_empty result.statements
-    assert_equal "syntax error at end of input", result.errors.first.fetch(:message)
-    assert_equal 13, result.errors.first.fetch(:position)
+    assert_equal YbDDLParser::AST::ParseDiagnostic, result.errors.first.class
+    assert_equal "syntax error at end of input", result.errors.first.message
+    assert_equal 13, result.errors.first.position
   end
 end

@@ -55,9 +55,11 @@ class YbDDLParserTest < Minitest::Test
     assert_equal :implicit, stmt.concurrently
     assert_equal false, stmt.explicit_concurrently?
     assert_equal true, stmt.keys.first.hashed
+    assert_nil stmt.keys.first.hash_group
     assert_equal ["shop_id", "created_at"], stmt.keys.map(&:name)
     assert_equal [true, false], stmt.keys.map(&:hash?)
     assert_equal [:hash, :desc], stmt.keys.map(&:order)
+    assert_empty stmt.hash_key_groups
   end
 
   def test_create_index_nonconcurrently
@@ -82,6 +84,15 @@ class YbDDLParserTest < Minitest::Test
     assert_equal 1, stmt.objects.length
     assert_equal "core", stmt.objects.first.schema
     assert_equal "idx_orders_id", stmt.objects.first.name
+  end
+
+  def test_drop_index_multiple_objects
+    stmt = YbDDLParser.parse!("DROP INDEX idx_users_name, idx_users_email;").single_statement!
+
+    assert_equal :drop, stmt.kind
+    assert_equal :index, stmt.object_type
+    assert_equal :disabled, stmt.concurrently
+    assert_equal %w[idx_users_name idx_users_email], stmt.objects.map(&:qualified_name)
   end
 
   def test_alter_table_relation_and_object_type
@@ -151,6 +162,58 @@ class YbDDLParserTest < Minitest::Test
     assert_equal ["id"], stmt.include_columns
     assert_equal "octet_length(country_code) = 2", stmt.where_sql
     assert_equal YbDDLParser::AST::TabletSplit.new(type: :num_tablets, num_tablets: 4, points: nil), stmt.tablet_split
+  end
+
+  def test_create_index_hash_key_group
+    stmt = YbDDLParser.parse!("CREATE INDEX idx ON schema.users ((shop_id, user_id) HASH);").single_statement!
+
+    assert_equal %w[shop_id user_id], stmt.keys.map(&:name)
+    assert_equal [true, true], stmt.keys.map(&:hash?)
+    assert_equal [0, 0], stmt.keys.map(&:hash_group)
+    assert_equal [["shop_id", "user_id"]], stmt.hash_key_groups
+  end
+
+  def test_create_index_expression_key
+    stmt = YbDDLParser.parse!("CREATE INDEX idx ON users (COALESCE(email, 'default'));").single_statement!
+    key = stmt.keys.first
+
+    assert_nil key.name
+    assert_equal "COALESCE(email, 'default')", key.expression
+    assert_equal false, key.hash?
+  end
+
+  def test_create_index_hash_expression_key
+    stmt = YbDDLParser.parse!("CREATE INDEX idx ON users ((COALESCE(email, 'default')) HASH);").single_statement!
+    key = stmt.keys.first
+
+    assert_nil key.name
+    assert_equal "COALESCE(email, 'default')", key.expression
+    assert_equal true, key.hash?
+    assert_nil key.hash_group
+  end
+
+  def test_column_check_compound_expression_functions
+    and_stmt = YbDDLParser.parse!(<<~SQL).single_statement!
+      CREATE TABLE t (
+        col TEXT CHECK (octet_length(col) <= 100 AND col != '')
+      );
+    SQL
+    and_check = and_stmt.columns.first.constraints.first
+
+    assert_equal :check, and_check.type
+    assert_equal ["octet_length"], and_check.functions
+    assert_includes and_check.raw_expression, "octet_length(col) <= 100"
+
+    or_stmt = YbDDLParser.parse!(<<~SQL).single_statement!
+      CREATE TABLE t (
+        col TEXT CHECK (col IS NULL OR octet_length(col) <= 100)
+      );
+    SQL
+    or_check = or_stmt.columns.first.constraints.first
+
+    assert_equal :check, or_check.type
+    assert_equal ["octet_length"], or_check.functions
+    assert_includes or_check.raw_expression, "col IS NULL"
   end
 
   def test_split_at_values

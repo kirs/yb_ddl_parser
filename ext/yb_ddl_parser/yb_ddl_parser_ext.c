@@ -800,6 +800,25 @@ operator_name_string(List *names)
   return rb_str_new_cstr("?");
 }
 
+static void
+append_expression_items(VALUE out, List *items, const char *separator)
+{
+  ListCell *cell;
+  int index = 0;
+
+  foreach(cell, items)
+  {
+    VALUE item = expression_string((Node *) lfirst(cell));
+    if (NIL_P(item))
+      item = rb_str_new_cstr("?");
+
+    if (index > 0)
+      rb_str_cat_cstr(out, separator);
+    rb_str_append(out, item);
+    index++;
+  }
+}
+
 static VALUE
 expression_string(Node *node)
 {
@@ -814,6 +833,40 @@ expression_string(Node *node)
       return column_ref_string(castNode(ColumnRef, node));
     case T_FuncCall:
       return function_call_string(castNode(FuncCall, node));
+    case T_CoalesceExpr:
+    {
+      CoalesceExpr *expr = castNode(CoalesceExpr, node);
+      VALUE out = rb_str_new_cstr("COALESCE(");
+      append_expression_items(out, expr->args, ", ");
+      rb_str_cat_cstr(out, ")");
+      return out;
+    }
+    case T_BoolExpr:
+    {
+      BoolExpr *expr = castNode(BoolExpr, node);
+
+      if (expr->boolop == NOT_EXPR)
+      {
+        VALUE arg = expression_string((Node *) linitial(expr->args));
+        VALUE out = rb_str_new_cstr("NOT ");
+        rb_str_append(out, NIL_P(arg) ? rb_str_new_cstr("?") : arg);
+        return out;
+      }
+
+      VALUE out = rb_str_new("", 0);
+      append_expression_items(out, expr->args,
+                              expr->boolop == AND_EXPR ? " AND " : " OR ");
+      return out;
+    }
+    case T_NullTest:
+    {
+      NullTest *expr = castNode(NullTest, node);
+      VALUE arg = expression_string((Node *) expr->arg);
+      VALUE out = NIL_P(arg) ? rb_str_new_cstr("?") : rb_str_dup(arg);
+      rb_str_cat_cstr(out,
+                      expr->nulltesttype == IS_NULL ? " IS NULL" : " IS NOT NULL");
+      return out;
+    }
     case T_A_Expr:
     {
       A_Expr *expr = castNode(A_Expr, node);
@@ -902,6 +955,30 @@ collect_expression_functions(Node *node, VALUE functions)
       collect_expression_functions(expr->rexpr, functions);
       break;
     }
+    case T_BoolExpr:
+    {
+      BoolExpr *expr = castNode(BoolExpr, node);
+      ListCell *cell;
+      foreach(cell, expr->args)
+      {
+        collect_expression_functions((Node *) lfirst(cell), functions);
+      }
+      break;
+    }
+    case T_NullTest:
+      collect_expression_functions((Node *) castNode(NullTest, node)->arg,
+                                   functions);
+      break;
+    case T_CoalesceExpr:
+    {
+      CoalesceExpr *expr = castNode(CoalesceExpr, node);
+      ListCell *cell;
+      foreach(cell, expr->args)
+      {
+        collect_expression_functions((Node *) lfirst(cell), functions);
+      }
+      break;
+    }
     case T_TypeCast:
       collect_expression_functions(castNode(TypeCast, node)->arg, functions);
       break;
@@ -960,6 +1037,8 @@ build_key_column(IndexElem *elem)
   rb_hash_aset(key, symbol_key("nulls"),
                symbol_value(nulls_order_name(elem->nulls_ordering)));
   hash_set_bool(key, "hash", elem->ordering == SORTBY_HASH);
+  if (elem->yb_hash_group >= 0)
+    rb_hash_aset(key, symbol_key("hash_group"), INT2NUM(elem->yb_hash_group));
 
   return key;
 }

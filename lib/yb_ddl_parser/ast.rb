@@ -8,7 +8,7 @@ module YbDDLParser
       end
     end
 
-    KeyColumn = Data.define(:name, :expression, :order, :nulls, :hashed) do
+    KeyColumn = Data.define(:name, :expression, :order, :nulls, :hashed, :hash_group) do
       def hash?
         hashed == true
       end
@@ -103,6 +103,17 @@ module YbDDLParser
 
       def target_name
         index_name || target_relation&.qualified_name || name
+      end
+
+      def hash_key_groups
+        groups = keys.each_with_object({}) do |key, grouped|
+          next if key.hash_group.nil?
+
+          grouped[key.hash_group] ||= []
+          grouped[key.hash_group] << (key.name || key.expression)
+        end
+
+        groups.keys.sort.map { |group| groups.fetch(group) }
       end
 
       def split
@@ -244,6 +255,7 @@ module YbDDLParser
           order: sym(hash[:order]),
           nulls: sym(hash[:nulls]),
           hashed: hash[:hash],
+          hash_group: hash[:hash_group],
         )
       end
 

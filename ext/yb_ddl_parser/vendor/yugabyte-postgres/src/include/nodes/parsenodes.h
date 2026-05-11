@@ -737,6 +737,9 @@ typedef enum TableLikeOption
  * the attribute group is first represented as an IndexElem with 'h1', 'h2',
  * ... in 'yb_yname_list'. The attribute group is then flattened as a list of
  * IndexElem's the relevant the grammar rules.
+ *
+ * yb_hash_group is -1 for ordinary index elements and non-negative for
+ * elements flattened from the same HASH attribute group.
  */
 typedef struct IndexElem
 {
@@ -749,6 +752,7 @@ typedef struct IndexElem
 	List	   *opclassopts;	/* opclass-specific options, or NIL */
 	SortByDir	ordering;		/* ASC/DESC/default */
 	SortByNulls nulls_ordering; /* FIRST/LAST/default */
+	int			yb_hash_group;	/* YB HASH group id, or -1 */
 } IndexElem;
 
 /*

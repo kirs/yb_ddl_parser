@@ -34591,6 +34591,7 @@ yyreduce:
 						index_elem->opclass = NIL;
 						index_elem->ordering = SORTBY_DEFAULT;
 						index_elem->nulls_ordering = SORTBY_NULLS_DEFAULT;
+						index_elem->yb_hash_group = -1;
 						n->yb_index_params = lappend(n->yb_index_params, index_elem);
 					}
 
@@ -37920,7 +37921,8 @@ yyreduce:
 					n->removeType = (yyvsp[(2) - (6)].objtype);
 					n->missing_ok = true;
 					n->objects = (yyvsp[(5) - (6)].list);
-					if (list_length((yyvsp[(5) - (6)].list)) > 1 && n->removeType != OBJECT_TABLE)
+					if (list_length((yyvsp[(5) - (6)].list)) > 1 && n->removeType != OBJECT_TABLE &&
+						n->removeType != OBJECT_INDEX)
 						parser_ybc_signal_unsupported((yylsp[(5) - (6)]), "DROP multiple objects", 880);
 					n->behavior = (yyvsp[(6) - (6)].dbehavior);
 					n->concurrent = false;
@@ -37936,7 +37938,8 @@ yyreduce:
 					n->removeType = (yyvsp[(2) - (4)].objtype);
 					n->missing_ok = false;
 					n->objects = (yyvsp[(3) - (4)].list);
-					if (list_length((yyvsp[(3) - (4)].list)) > 1 && n->removeType != OBJECT_TABLE)
+					if (list_length((yyvsp[(3) - (4)].list)) > 1 && n->removeType != OBJECT_TABLE &&
+						n->removeType != OBJECT_INDEX)
 						parser_ybc_signal_unsupported((yylsp[(3) - (4)]), "DROP multiple objects", 880);
 					n->behavior = (yyvsp[(4) - (4)].dbehavior);
 					n->concurrent = false;
@@ -37952,7 +37955,8 @@ yyreduce:
 					n->removeType = (yyvsp[(2) - (6)].objtype);
 					n->missing_ok = true;
 					n->objects = (yyvsp[(5) - (6)].list);
-					if (list_length((yyvsp[(5) - (6)].list)) > 1 && n->removeType != OBJECT_TABLE)
+					if (list_length((yyvsp[(5) - (6)].list)) > 1 && n->removeType != OBJECT_TABLE &&
+						n->removeType != OBJECT_INDEX)
 						parser_ybc_signal_unsupported((yylsp[(5) - (6)]), "DROP multiple objects", 880);
 					n->behavior = (yyvsp[(6) - (6)].dbehavior);
 					n->concurrent = false;
@@ -37968,7 +37972,8 @@ yyreduce:
 					n->removeType = (yyvsp[(2) - (4)].objtype);
 					n->missing_ok = false;
 					n->objects = (yyvsp[(3) - (4)].list);
-					if (list_length((yyvsp[(3) - (4)].list)) > 1 && n->removeType != OBJECT_TABLE)
+					if (list_length((yyvsp[(3) - (4)].list)) > 1 && n->removeType != OBJECT_TABLE &&
+						n->removeType != OBJECT_INDEX)
 						parser_ybc_signal_unsupported((yylsp[(3) - (4)]), "DROP multiple objects", 880);
 					n->behavior = (yyvsp[(4) - (4)].dbehavior);
 					n->concurrent = false;
@@ -39790,6 +39795,7 @@ yyreduce:
 			(yyval.ielem)->opclassopts = NIL;
 			(yyval.ielem)->ordering = (yyvsp[(3) - (5)].ival);
 			(yyval.ielem)->nulls_ordering = (yyvsp[(4) - (5)].ival);
+			(yyval.ielem)->yb_hash_group = -1;
 		;}
     break;
 
@@ -39805,6 +39811,7 @@ yyreduce:
 			(yyval.ielem)->opclassopts = (yyvsp[(3) - (6)].list);
 			(yyval.ielem)->ordering = (yyvsp[(4) - (6)].ival);
 			(yyval.ielem)->nulls_ordering = (yyvsp[(5) - (6)].ival);
+			(yyval.ielem)->yb_hash_group = -1;
 		;}
     break;
 
@@ -39904,6 +39911,7 @@ yyreduce:
 							index_elem->opclass = NIL;
 							index_elem->ordering = (yyvsp[(4) - (4)].ival);
 							index_elem->nulls_ordering = SORTBY_NULLS_DEFAULT;
+							index_elem->yb_hash_group = 0;
 							(yyval.list) = lappend((yyval.list), index_elem);
 					}
 				;}

@@ -4384,6 +4384,7 @@ ConstraintElem:
 						index_elem->opclass = NIL;
 						index_elem->ordering = SORTBY_DEFAULT;
 						index_elem->nulls_ordering = SORTBY_NULLS_DEFAULT;
+						index_elem->yb_hash_group = -1;
 						n->yb_index_params = lappend(n->yb_index_params, index_elem);
 					}
 
@@ -7194,7 +7195,8 @@ DropStmt:	DROP object_type_any_name IF_P EXISTS any_name_list opt_drop_behavior
 					n->removeType = $2;
 					n->missing_ok = true;
 					n->objects = $5;
-					if (list_length($5) > 1 && n->removeType != OBJECT_TABLE)
+					if (list_length($5) > 1 && n->removeType != OBJECT_TABLE &&
+						n->removeType != OBJECT_INDEX)
 						parser_ybc_signal_unsupported(@5, "DROP multiple objects", 880);
 					n->behavior = $6;
 					n->concurrent = false;
@@ -7207,7 +7209,8 @@ DropStmt:	DROP object_type_any_name IF_P EXISTS any_name_list opt_drop_behavior
 					n->removeType = $2;
 					n->missing_ok = false;
 					n->objects = $3;
-					if (list_length($3) > 1 && n->removeType != OBJECT_TABLE)
+					if (list_length($3) > 1 && n->removeType != OBJECT_TABLE &&
+						n->removeType != OBJECT_INDEX)
 						parser_ybc_signal_unsupported(@3, "DROP multiple objects", 880);
 					n->behavior = $4;
 					n->concurrent = false;
@@ -7220,7 +7223,8 @@ DropStmt:	DROP object_type_any_name IF_P EXISTS any_name_list opt_drop_behavior
 					n->removeType = $2;
 					n->missing_ok = true;
 					n->objects = $5;
-					if (list_length($5) > 1 && n->removeType != OBJECT_TABLE)
+					if (list_length($5) > 1 && n->removeType != OBJECT_TABLE &&
+						n->removeType != OBJECT_INDEX)
 						parser_ybc_signal_unsupported(@5, "DROP multiple objects", 880);
 					n->behavior = $6;
 					n->concurrent = false;
@@ -7233,7 +7237,8 @@ DropStmt:	DROP object_type_any_name IF_P EXISTS any_name_list opt_drop_behavior
 					n->removeType = $2;
 					n->missing_ok = false;
 					n->objects = $3;
-					if (list_length($3) > 1 && n->removeType != OBJECT_TABLE)
+					if (list_length($3) > 1 && n->removeType != OBJECT_TABLE &&
+						n->removeType != OBJECT_INDEX)
 						parser_ybc_signal_unsupported(@3, "DROP multiple objects", 880);
 					n->behavior = $4;
 					n->concurrent = false;
@@ -8645,6 +8650,7 @@ index_elem_options:
 			$$->opclassopts = NIL;
 			$$->ordering = $3;
 			$$->nulls_ordering = $4;
+			$$->yb_hash_group = -1;
 		}
 	| opt_collate any_name reloptions opt_yb_index_sort_order opt_nulls_order yb_opt_alias
 		{
@@ -8657,6 +8663,7 @@ index_elem_options:
 			$$->opclassopts = $3;
 			$$->ordering = $4;
 			$$->nulls_ordering = $5;
+			$$->yb_hash_group = -1;
 		}
 	;
 
@@ -8747,6 +8754,7 @@ yb_index_expr_list_hash_elems: '(' yb_hash_index_expr_list ')' opt_yb_hash
 							index_elem->opclass = NIL;
 							index_elem->ordering = $4;
 							index_elem->nulls_ordering = SORTBY_NULLS_DEFAULT;
+							index_elem->yb_hash_group = 0;
 							$$ = lappend($$, index_elem);
 					}
 				}

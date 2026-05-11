@@ -36,7 +36,8 @@ The public value objects are:
 - `AST::Column`: `name`, `type`, `typmods`, `constraints`
 - `AST::Constraint`: `type`, `name`, `columns`, `key_columns`, `raw_expression`,
   `functions`
-- `AST::KeyColumn`: `name`, `expression`, `order`, `nulls`, `hashed`, `hash?`
+- `AST::KeyColumn`: `name`, `expression`, `order`, `nulls`, `hashed`,
+  `hash_group`, `hash?`
 - `AST::Command`: `kind`, `column`, `definition`, `constraint`, `tablespace`,
   `missing_ok`
 - `AST::TabletSplit`: `type`, `num_tablets`, `points`
@@ -50,7 +51,11 @@ common AST types. `Statement#split` and `Statement#partition` remain aliases for
 Useful `Statement` helpers include `drop_table?`, `drop_index?`,
 `alter_index?`, `partition_parent?`, `partition_child?`,
 `explicit_concurrently?`, `target_relation`, `target_relations`, and
-`target_name`.
+`target_name`, and `hash_key_groups`.
+
+For Yugabyte HASH key groups such as `((tenant_id, user_id) HASH)`, grouped
+keys share the same `KeyColumn#hash_group`. `Statement#hash_key_groups` returns
+those grouped key names or expressions, for example `[["tenant_id", "user_id"]]`.
 
 `raw_node_type` exposes the vendored parser node tag, such as `T_SelectStmt`,
 for diagnostics when `kind` is `:unknown`.
